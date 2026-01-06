@@ -69,7 +69,6 @@ async function generateOrderExcel(orderNumber: string, items: any[]) {
   return workbook.xlsx.writeBuffer()
 }
 
-
 // ----------------------------------------
 // ROUTE
 // ----------------------------------------
@@ -260,117 +259,158 @@ export async function POST(req: Request) {
     // ----------------------------------------
     // PDF
     // ----------------------------------------
-    const doc = new jsPDF()
+    const doc = new jsPDF("p", "mm", "a4")
 
-    const BLUE = [20, 40, 120]
-    const RED = [220, 38, 38]
-
-    // watermark
     const pageW = doc.internal.pageSize.getWidth()
     const pageH = doc.internal.pageSize.getHeight()
 
-    doc.setGState(new (doc as any).GState({ opacity: 0.08 }))
-    doc.addImage(background, "PNG", (pageW - 160) / 2, (pageH - 160) / 2, 160, 160)
-    doc.setGState(new (doc as any).GState({ opacity: 1 }))
+    // Watermark
+    doc.setGState(new (doc as any).GState({ opacity: 0.35 }))
+    doc.addImage(background, "PNG", (pageW - 200) / 2, (pageH - 120) / 2, 200, 120)
+    doc.setGState(new (doc as any).GState({ opacity: 2 }))
 
-    // HEADER
-    doc.setFillColor(...BLUE)
-    doc.rect(0, 0, 210, 25, "F")
+    // ===== HEADER (UPDATED DESIGN) =====
+    doc.setFillColor(225, 232, 240) // light gray-blue
+    doc.rect(0, 0, pageW, 36, "F")
 
-    doc.setFillColor(...RED)
-    doc.triangle(0, 0, 210, 0, 0, 14, "F")
+    // Stripe 1 – Dark Blue
+    doc.setFillColor(30, 58, 138)
+    doc.triangle(0, 0, pageW * 0.55, 0, 0, 36, "F")
 
-    doc.addImage(logo, "PNG", 148, 4, 48, 30)
+    // Stripe 2 – Gray Blue
+    doc.setFillColor(120, 140, 180)
+    doc.triangle(
+      pageW * 0.15,
+      0,
+      pageW * 0.7,
+      0,
+      pageW * 0.15,
+      36,
+      "F"
+    )
 
-    doc.setFontSize(20)
-    doc.setTextColor(255, 255, 255)
+    // Stripe 3 – Soft Red
+    doc.setFillColor(200, 60, 60)
+    doc.triangle(
+      pageW * 0.3,
+      0,
+      pageW * 0.85,
+      0,
+      pageW * 0.3,
+      36,
+      "F"
+    )
+
+    // Logo (no dark background behind it)
+    doc.addImage(logo, "PNG", pageW - 60, 6, 40, 30)
+
+    // Title
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(22)
+    doc.setTextColor(0, 0, 0)
     doc.text("BON DE COMMANDE", 15, 22)
 
+    // Order number
     doc.setFontSize(11)
-    doc.text(`N° ${orderNumber}`, 15, 30)
-
-    // ----------------------------------------
-    // COMPANY INFO
-    // ----------------------------------------
     doc.setTextColor(0, 0, 0)
+    doc.text(`Commande N° ${orderNumber}`, 15, 30)
+
+    // Date
+    doc.setTextColor(110, 110, 110)
+    doc.text(`Date : ${orderDate}`, pageW - 65, 42)
+
+    // Section helper
+    const section = (y: number, title: string) => {
+      doc.setFillColor(245, 245, 245)
+      doc.roundedRect(12, y, pageW - 24, 10, 3, 3, "F")
+      doc.setTextColor(30, 58, 138)
+      doc.setFontSize(11)
+      doc.text(title, 16, y + 7)
+    }
+
+    let y = 50
+
+    // Company
+    section(y, "ENTREPRISE")
+    y += 15
     doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    doc.text("MN RIDERS", 16, y)
+    y += 5
+    doc.text("Instagram : mn_riiders", 16, y)
+    y += 5
+    doc.text("Facebook : MN RIDERS", 16, y)
+    y += 5
+    doc.text("WhatsApp : 0636743640", 16, y)
+    y += 5
+    doc.text("Email : mnriiders@gmail.com", 16, y)
 
-    let y = 45
-    doc.text("MN RIDERS", 15, y)
-    y += 5
-    doc.text("Instagram : mn_riiders", 15, y)
-    y += 5
-    doc.text("Facebook : MN RIDERS", 15, y)
-    y += 5
-    doc.text("WhatsApp : 0636743640", 15, y)
-    y += 5
-    doc.text("Adresse : hay oulfa alazhar", 15, y)
-    y += 5
-    doc.text("Email : mnriiders@gmail.com", 15, y)
-
-    // ----------------------------------------
-    // CLIENT INFO
-    // ----------------------------------------
+    // Client
     y += 8
-    doc.setFontSize(11)
-    doc.setTextColor(...BLUE)
-    doc.text("Client :", 15, y)
-
+    section(y, "CLIENT")
+    y += 15
+    doc.text(`Nom : ${fullName}`, 16, y)
     y += 5
-    doc.setFontSize(10)
-    doc.setTextColor(0, 0, 0)
-    doc.text(fullName, 15, y)
-
+    doc.text(`Téléphone : ${phone}`, 16, y)
     y += 5
-    doc.text(`Téléphone : ${phone}`, 15, y)
-
+    doc.text(`Email : ${email}`, 16, y)
     y += 5
-    doc.text(`Email : ${email}`, 15, y)
+    doc.text(`Adresse : ${address}`, 16, y)
 
-    y += 5
-    doc.text(`Adresse : ${address}`, 15, y)
-
-    doc.text("Date :", 150, 50)
-    doc.text(orderDate, 165, 50)
-
-    // ----------------------------------------
-    // TABLE
-    // ----------------------------------------
+    // Table
+    y += 10
     autoTable(doc, {
-      startY: y + 10,
-      head: [["Article", "Quantité", "Prix", "Total"]],
+      startY: y,
+      head: [["Article", "Quantité", "Prix unitaire", "Total"]],
       body: items.map((i: any) => [
         i.name,
         i.quantity,
-        `${i.price.toFixed(2)} €`,
-        `${(i.price * i.quantity).toFixed(2)} €`,
+        `${i.price.toFixed(2)} MAD`,
+        `${(i.price * i.quantity).toFixed(2)} MAD`,
       ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: BLUE, textColor: [255, 255, 255] },
+      headStyles: { fillColor: [30, 58, 138], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [245, 247, 250] },
+      styles: { fontSize: 10 },
     })
 
-    // ----------------------------------------
-    // TOTAL + REMARK + SIGNATURE
-    // ----------------------------------------
-    const finalY = (doc as any).lastAutoTable.finalY + 10
+    const finalY = (doc as any).lastAutoTable.finalY + 12
 
-    doc.setFontSize(12)
-    doc.setTextColor(...RED)
-    doc.text(`TOTAL TTC : ${total.toFixed(2)} €`, 140, finalY)
+    // Total
+    doc.setFillColor(200, 60, 60)
+    doc.roundedRect(pageW - 85, finalY, 70, 18, 3, 3, "F")
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(14)
+    doc.text(`TOTAL : ${total.toFixed(2)} MAD`, pageW - 80, finalY + 12)
 
-    doc.setFontSize(9)
+    // Amount in words
     doc.setTextColor(0, 0, 0)
-    doc.text("Arrêté la présente commande à la somme de :", 15, finalY + 10)
-    doc.text(amountToWords(total), 15, finalY + 15)
+    doc.setFontSize(10)
+    doc.text("Arrêté la présente commande à la somme de :", 16, finalY + 25)
+    doc.text(amountToWords(total), 16, finalY + 30)
 
+    // Remark
     if (remark) {
-      doc.text("Remarque :", 15, finalY + 25)
-      doc.text(remark, 15, finalY + 30)
+      doc.setFont("helvetica", "bold")
+      doc.text("Remarque :", 16, finalY + 40)
+      doc.setFont("helvetica", "normal")
+      doc.text(remark, 16, finalY + 45)
     }
 
-    doc.text("Signature :", 140, finalY + 28)
-    doc.addImage(signature, "PNG", 140, finalY + 32, 40, 18)
+    // Signature
+    doc.setFont("helvetica", "bold")
+    doc.text("Signature :", pageW - 80, finalY + 42)
+    doc.addImage(signature, "PNG", pageW - 80, finalY + 46, 45, 18)
+
+    // Footer
+    doc.setFontSize(9)
+    doc.setTextColor(120, 120, 120)
+    doc.text(
+      `© ${new Date().getFullYear()} MN RIDERS — POWER • STYLE • IDENTITY`,
+      pageW / 2,
+      pageH - 10,
+      { align: "center" }
+    )
+
 
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"))
 

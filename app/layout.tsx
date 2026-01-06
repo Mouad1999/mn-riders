@@ -5,6 +5,8 @@ import { Analytics } from "@vercel/analytics/next"
 import { CartProvider } from "@/context/cart-context"
 import "./globals.css"
 import { LanguageProvider } from "@/context/language-context"
+import Chatbot from "@/components/chatbot"
+
 
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -39,6 +41,7 @@ export default function RootLayout({
         <LanguageProvider>
           <CartProvider>
             {children}
+            <Chatbot /> 
           </CartProvider>
         </LanguageProvider>
       </body>
