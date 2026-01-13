@@ -8,7 +8,7 @@ export interface Product {
 
 /* ---------------- HOODIES ---------------- */
 
-export const HOODIES: Product[] = Array.from({ length: 13 }, (_, i) => ({
+export const HOODIES: Product[] = Array.from({ length: 36 }, (_, i) => ({
   id: i + 1,
   name: `MN Riders Hoodie ${i + 1}`,
   price: 250 + (i % 3) * 10,
@@ -19,7 +19,7 @@ export const HOODIES: Product[] = Array.from({ length: 13 }, (_, i) => ({
 
 /* ---------------- CAGOULES ---------------- */
 
-export const CAGOULES: Product[] = Array.from({ length: 3 }, (_, i) => ({
+export const CAGOULES: Product[] = Array.from({ length: 7 }, (_, i) => ({
   id: 100 + i,
   name: `MN Riders Cagoule ${i + 1}`,
   price: 100 + i * 10,
